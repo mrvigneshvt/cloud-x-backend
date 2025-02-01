@@ -1,7 +1,7 @@
 export const configDatas = {
   client: {
-    ip: "192.168.1.10",
-    port: "5173",
+    ip: "109.123.237.36/", //"192.168.1.10",
+    port: "5174",
   },
   WhatsAuth: {
     apiUrl: "http://109.123.237.36:3000/send-message",
