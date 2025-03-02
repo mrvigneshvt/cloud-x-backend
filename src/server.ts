@@ -4,6 +4,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { TimeScheduler } from "./plugins/tmdbApi/tmdbApi";
 import { configDatas } from "../config";
+import DataBase from "./DB/connect";
+import { errorLogger } from "../ERROR-LOGGER/errorLogger";
 
 const app = express();
 
@@ -14,7 +16,7 @@ app.use(
   cors({
     origin: `http://${configDatas.client.ip}:${configDatas.client.port}`,
     credentials: true,
-  })
+  }),
 );
 app.use(express.json());
 
@@ -25,7 +27,14 @@ app.use("/api", router);
 
 // Start Server
 const PORT = 5000;
+export const DB = new DataBase(configDatas.MongoUri.apiUrl);
+
 app.listen(PORT, "0.0.0.0", async () => {
-  await TimeScheduler();
-  console.log(`Server running on http://localhost:${PORT}`);
+  try {
+    await DB.connectDB();
+    await TimeScheduler();
+    console.log(`Server running on http://localhost:${PORT}`);
+  } catch (error: unknown) {
+    errorLogger("error in portLisening::", error);
+  }
 });

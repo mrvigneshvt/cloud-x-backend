@@ -13,16 +13,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
-const config_1 = require("../../config");
 const model_1 = require("./model");
-const dbConnection = () => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const connection = yield mongoose_1.default.connect(config_1.configDatas.MongoUri.apiUrl);
-        if (!connection) {
-        }
-    }
-    catch (error) { }
-});
+const errorLogger_1 = require("../../ERROR-LOGGER/errorLogger");
 class DataBase {
     constructor(mongoUri) {
         this.mongo = mongoUri;
@@ -34,29 +26,75 @@ class DataBase {
                 return true;
             }
             catch (error) {
-                console.log("error in db Connection::", error);
-                return false;
+                (0, errorLogger_1.errorLogger)('error in db Connection::"', error);
+                throw new Error("Cant be Able to Connect to DB !@! shutting DOWN");
             }
         });
     }
-    isUserExist(id) {
+    getUser(uniqueNumber) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const user = yield model_1.userModel.findOne({ userId: id });
-                return user ? true : false;
-            }
-            catch (error) {
-                console.log("error in UserExist::", error);
-                return false;
-            }
-        });
-    }
-    createUser(id) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const createUser = yield model_1.userModel.create({ userId: id });
+                return yield model_1.userModel.findOne({ userId: uniqueNumber });
             }
             catch (error) { }
         });
     }
+    isUserExist(unqiueNumber) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const user = yield model_1.userModel.findOne({ userId: unqiueNumber });
+                user ? true : yield this.createUser(unqiueNumber);
+                return true;
+            }
+            catch (error) {
+                (0, errorLogger_1.errorLogger)("error in UserExist::", error);
+                return false;
+            }
+        });
+    }
+    createUser(unqiueNumber) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield model_1.userModel.create({ userId: unqiueNumber });
+                return true;
+            }
+            catch (error) {
+                return false;
+            }
+        });
+    }
+    handleSearchQuery(unqiueNumber, query) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                console.log("handling search in db");
+                yield model_1.userModel.findOneAndUpdate({ userId: unqiueNumber }, {
+                    $push: {
+                        searchHistory: query,
+                    },
+                });
+            }
+            catch (error) {
+                (0, errorLogger_1.errorLogger)("error in mongo handleSearchQuery::", error);
+            }
+        });
+    }
+    handleMovieLookUp(unqiueNumber, movieId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                console.log("handling Movie");
+                yield model_1.userModel.findOneAndUpdate({ userId: unqiueNumber }, {
+                    $push: {
+                        watchHistoryMovie: {
+                            movieId,
+                            watchedAt: new Date(),
+                        },
+                    },
+                });
+            }
+            catch (error) {
+                (0, errorLogger_1.errorLogger)("error in Movielookup", error);
+            }
+        });
+    }
 }
+exports.default = DataBase;

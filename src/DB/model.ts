@@ -26,11 +26,15 @@ const userSchema = new mongoose.Schema(
       required: true,
       default: false,
     },
-    favoriteList: {
+    searchHistory: {
+      type: [String],
+      default: [],
+    },
+    favoriteMovieList: {
       type: [String], // Array of movie IDs
       default: [],
     },
-    watchHistory: {
+    watchHistoryMovie: {
       type: [
         {
           movieId: String, // ID of the movie
@@ -40,7 +44,7 @@ const userSchema = new mongoose.Schema(
       default: [],
     },
   },
-  { timestamps: true } // Adds createdAt and updatedAt fields automatically
+  { timestamps: true }, // Adds createdAt and updatedAt fields automatically
 );
 
 export const userModel = mongoose.model("User", userSchema);

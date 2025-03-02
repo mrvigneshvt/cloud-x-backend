@@ -1,7 +1,14 @@
 import { configDatas } from "../../.././config";
+import { errorLogger } from "../../../ERROR-LOGGER/errorLogger";
 import { fetchWithRetry } from "../fetch";
 
-export const fetchTMDBapi = async (url: string, series?: boolean) => {
+interface fetchTMDBtypes {
+  url: string;
+  series?: boolean;
+  page?: number;
+}
+
+export const fetchTMDBapi = async (args: fetchTMDBtypes) => {
   const options = {
     method: "GET",
     headers: {
@@ -10,8 +17,10 @@ export const fetchTMDBapi = async (url: string, series?: boolean) => {
     },
   };
 
+  args.page ? (args.url = args.url.slice(0, -1) + args.page) : null;
+
   try {
-    const respose = await fetch(url, options);
+    const respose = await fetch(args.url, options);
 
     if (respose.ok) {
       const data = await respose.json();
@@ -26,7 +35,7 @@ export const fetchTMDBapi = async (url: string, series?: boolean) => {
         releaseDate: string,
         id: number,
         story: string,
-        category: string
+        category: string,
       ) => {
         return {
           title,
@@ -39,7 +48,7 @@ export const fetchTMDBapi = async (url: string, series?: boolean) => {
       };
 
       await results.map((d: any, i: number) => {
-        if (series) {
+        if (args.series) {
           dataTosend.push(
             neededResults(
               d.name,
@@ -47,8 +56,8 @@ export const fetchTMDBapi = async (url: string, series?: boolean) => {
               d.first_air_date,
               d.id,
               d.overview,
-              "tv"
-            )
+              "tv",
+            ),
           );
         } else {
           dataTosend.push(
@@ -58,19 +67,18 @@ export const fetchTMDBapi = async (url: string, series?: boolean) => {
               d.release_date,
               d.id,
               d.overview,
-              "movie"
-            )
+              "movie",
+            ),
           );
         }
       });
 
       return dataTosend;
     }
-    console.log(respose.status);
   } catch (error) {
-    fetchTMDBapi(url);
-    console.log(error);
+    errorLogger("error in fetchTMDBapi::", error);
+    await fetchTMDBapi(args);
   }
 };
 
-fetchTMDBapi(configDatas.TmdbApi.apiEndPoint.topRated);
+const data = configDatas.TmdbApi.apiEndPoint.topRated;

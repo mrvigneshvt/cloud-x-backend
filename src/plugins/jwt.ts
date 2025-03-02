@@ -1,5 +1,6 @@
 import { configDatas } from "../../config";
 import jwt from "jsonwebtoken";
+import { errorLogger } from "../../ERROR-LOGGER/errorLogger";
 
 export const gwtGenerate = (id: string) => {
   try {
@@ -7,6 +8,6 @@ export const gwtGenerate = (id: string) => {
       expiresIn: "3d",
     });
   } catch (error) {
-    console.log("error in jwtGenerate:: ", error);
+    errorLogger("error in jwtGenerate:: ", error);
   }
 };

@@ -11,7 +11,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.fetchTMDBapi = void 0;
 const config_1 = require("../../.././config");
-const fetchTMDBapi = (url, series) => __awaiter(void 0, void 0, void 0, function* () {
+const errorLogger_1 = require("../../../ERROR-LOGGER/errorLogger");
+const fetchTMDBapi = (args) => __awaiter(void 0, void 0, void 0, function* () {
     const options = {
         method: "GET",
         headers: {
@@ -19,8 +20,9 @@ const fetchTMDBapi = (url, series) => __awaiter(void 0, void 0, void 0, function
             Authorization: config_1.configDatas.TmdbApi.key,
         },
     };
+    args.page ? (args.url = args.url.slice(0, -1) + args.page) : null;
     try {
-        const respose = yield fetch(url, options);
+        const respose = yield fetch(args.url, options);
         if (respose.ok) {
             const data = yield respose.json();
             const results = data.results;
@@ -36,7 +38,7 @@ const fetchTMDBapi = (url, series) => __awaiter(void 0, void 0, void 0, function
                 };
             };
             yield results.map((d, i) => {
-                if (series) {
+                if (args.series) {
                     dataTosend.push(neededResults(d.name, d.backdrop_path, d.first_air_date, d.id, d.overview, "tv"));
                 }
                 else {
@@ -45,12 +47,11 @@ const fetchTMDBapi = (url, series) => __awaiter(void 0, void 0, void 0, function
             });
             return dataTosend;
         }
-        console.log(respose.status);
     }
     catch (error) {
-        (0, exports.fetchTMDBapi)(url);
-        console.log(error);
+        (0, errorLogger_1.errorLogger)("error in fetchTMDBapi::", error);
+        yield (0, exports.fetchTMDBapi)(args);
     }
 });
 exports.fetchTMDBapi = fetchTMDBapi;
-(0, exports.fetchTMDBapi)(config_1.configDatas.TmdbApi.apiEndPoint.topRated);
+const data = config_1.configDatas.TmdbApi.apiEndPoint.topRated;

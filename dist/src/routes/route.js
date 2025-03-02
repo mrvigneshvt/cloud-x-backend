@@ -21,21 +21,13 @@ const authJwt_1 = require("../plugins/authJwt");
 const ApiCache_1 = require("../DataCache/ApiCache");
 const streamCache_1 = require("../DataCache/streamCache");
 const fetch_1 = require("../plugins/fetch");
+const errorLogger_1 = require("../../ERROR-LOGGER/errorLogger");
+const Base_1 = require("./Base Route/Base");
 const router = express_1.default.Router();
 exports.router = router;
-router.get("/logout", authJwt_1.authenticateJwt, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    res.clearCookie("authToken", {
-        path: "/", // Ensure it matches the original cookie path
-        httpOnly: true, // If the cookie was set as httpOnly
-        secure: process.env.NODE_ENV === "production", // Secure in production
-        sameSite: "strict", // Adjust based on your use case
-    });
-    res.status(200).json({ message: "Logged out successfully" });
-}));
 // Sample GET request
 router.get("/ai", authJwt_1.authenticateJwt, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log(req, "reqqqq");
-    console.log(req.user, "usssser");
+    console.log(req.user, "usssser"); // if the USer is Authenticated
     res.status(200).json({
         message: "AI Server is running!",
     });
@@ -44,9 +36,7 @@ router.get("/watchOnline/uniqueHash/:hash", authJwt_1.authenticateJwt, (req, res
     try {
         const { hash } = req.params;
         const isCached = yield (0, streamCache_1.getCacheStream)(hash);
-        console.log(ApiCache_1.StreamCache);
         if (isCached) {
-            console.log("got from cache");
             return res.status(201).json(isCached);
         }
         const apiEndPoint = "http://156.67.105.219:4000/api/uniqueHash/" + hash;
@@ -62,7 +52,6 @@ router.get("/watchOnline/uniqueHash/:hash", authJwt_1.authenticateJwt, (req, res
         if (request.ok) {
             const response = yield request.json();
             (0, streamCache_1.cacheStreamData)(hash, response.data);
-            console.log(ApiCache_1.StreamCache);
             return res.status(201).json(response);
         }
         else {
@@ -70,15 +59,14 @@ router.get("/watchOnline/uniqueHash/:hash", authJwt_1.authenticateJwt, (req, res
         }
     }
     catch (error) {
-        console.log("error in WATCH-ONLINE:::", error);
+        (0, errorLogger_1.errorLogger)("error in WATCH-ONLINE:::", error);
     }
 }));
-router.get("/fetchQuery/:query", authJwt_1.authenticateJwt, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get("/fetchQuery/:query", (0, authJwt_1.authenticateJwt)({ handleSearch: true }), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { query } = req.params;
         const repQuery = query.replaceAll("_", "%20");
         const endPoint = `https://api.themoviedb.org/3/search/movie?query=${repQuery}`;
-        console.log("Fetching:", endPoint);
         const response = yield (0, fetch_1.fetchWithRetry)(endPoint, {
             method: "GET",
             headers: {
@@ -92,7 +80,6 @@ router.get("/fetchQuery/:query", authJwt_1.authenticateJwt, (req, res) => __awai
                 .json({ message: "Failed to fetch data after retries" });
         }
         if (!response.results || response.results.length < 1) {
-            console.log("not found");
             return res.status(404).json({ message: "not-found" });
         }
         const formattedResponse = response.results.map((d) => {
@@ -101,7 +88,7 @@ router.get("/fetchQuery/:query", authJwt_1.authenticateJwt, (req, res) => __awai
                 id: d.id,
                 title: d.title,
                 releaseYear: ((_a = d.release_date) === null || _a === void 0 ? void 0 : _a.slice(0, 4)) || "Unknown",
-                popular: d.popularity > 5.9,
+                popular: d.popularity,
                 poster: d.poster_path
                     ? config_1.configDatas.TmdbApi.imageEndPoint + d.poster_path
                     : config_1.configDatas.imageNotFound.url,
@@ -114,23 +101,12 @@ router.get("/fetchQuery/:query", authJwt_1.authenticateJwt, (req, res) => __awai
         return res.status(500).json({ message: "Internal Server Error" });
     }
 }));
-router.get("/home", authJwt_1.authenticateJwt, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        return res
-            .status(200)
-            .json([ApiCache_1.ApiCache.nowPlaying, ApiCache_1.ApiCache.popular, ApiCache_1.ApiCache.topRated]);
-    }
-    catch (error) {
-        console.log(error);
-    }
-}));
-router.get("/getMovieinfo/:id", authJwt_1.authenticateJwt, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get("/home", (0, authJwt_1.authenticateJwt)({ addUser: true }), Base_1.homeRoute);
+router.get("/getMovieinfo/:id", (0, authJwt_1.authenticateJwt)({ handleMovieLookup: true }), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
         const endPoint = config_1.configDatas.TmdbApi.apiEndPoint.getMovieinfo + id;
-        console.log(endPoint);
         const isCached = yield (0, streamCache_1.getMovieCache)(Number(id));
-        console.log(ApiCache_1.TmdbApiCache);
         if (isCached) {
             return res.status(200).json(isCached);
         }
@@ -143,7 +119,6 @@ router.get("/getMovieinfo/:id", authJwt_1.authenticateJwt, (req, res) => __await
         });
         if (respose.ok) {
             const Response = yield respose.json();
-            console.log(Response);
             // Ensure backdrop_path and poster_path are not null
             Response.backdrop_path = Response.backdrop_path
                 ? config_1.configDatas.TmdbApi.imageEndPoint + Response.backdrop_path
@@ -155,20 +130,17 @@ router.get("/getMovieinfo/:id", authJwt_1.authenticateJwt, (req, res) => __await
             return res.status(200).json(Response);
         }
         else {
-            console.log(respose);
             return res.status(500).json({ success: false, message: "apiFailure" });
         }
     }
     catch (error) {
-        console.log(error);
+        (0, errorLogger_1.errorLogger)("error in single GetMovieInfo::", error);
     }
 }));
 router.get("/fileAvailable/:fileName", authJwt_1.authenticateJwt, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { fileName } = req.params;
-        console.log("comes here");
         const endPoint = config_1.configDatas.openXapi.isExistEndPoint + `${fileName}/1`;
-        console.log(endPoint);
         const request = yield fetch(endPoint, {
             method: "GET",
             headers: {
@@ -177,16 +149,14 @@ router.get("/fileAvailable/:fileName", authJwt_1.authenticateJwt, (req, res) => 
         });
         if (request.ok) {
             const respose = yield request.json();
-            console.log(respose);
             return res.status(200).json(respose);
         }
         else {
-            console.log(request);
             return res.status(request.status).json({ message: "error not found" });
         }
     }
     catch (error) {
-        console.log(error);
+        (0, errorLogger_1.errorLogger)("error in fileAvailableRoute::", error);
     }
 }));
 router.get("/welcome/mainboard", (req, res) => __awaiter(void 0, void 0, void 0, function* () { }));
@@ -195,16 +165,12 @@ exports.localOtpCache = localOtpCache;
 router.post("/auth/otpverify", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { number, otp } = req.body;
     if (!localOtpCache[number]) {
-        console.log("TIMEOUT");
         return res.status(400).json({ success: false, message: "TIMEOUT" });
     }
     else if (localOtpCache[number] !== otp) {
-        console.log("INVALID");
         return res.status(401).json({ success: false, message: "INVALID" });
     }
-    console.log("GOOD");
     const jwtToken = (0, jwt_1.gwtGenerate)(number);
-    console.log(jwtToken, "jwttttttttttttttttttttttttttttS");
     res.cookie("authToken", jwtToken, {
         httpOnly: true, // Prevents access via JavaScript
         maxAge: 60 * 60 * 1000 * 48, // Cookie expires in 48 hours
@@ -220,3 +186,4 @@ router.post("/auth/otpverify", (req, res) => __awaiter(void 0, void 0, void 0, f
     });
 }));
 router.post("/auth/whatsapp", OtpAuth_1.WhatsAuth);
+router.get("/logout", authJwt_1.authenticateJwt, Base_1.logout);

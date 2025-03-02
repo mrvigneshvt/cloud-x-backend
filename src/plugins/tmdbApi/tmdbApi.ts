@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import { configDatas } from "../../../config";
 import { fetchTMDBapi } from "./fetchApi";
 import { ApiCache } from "../../DataCache/ApiCache";
+import { getRandomNumber } from "../otp";
 
 export const TimeScheduler = async () => {
   await refreshApiDatas();
@@ -10,9 +11,6 @@ export const TimeScheduler = async () => {
   endOfDay.setHours(23, 59, 59, 59); // Set to midnight of the next day
 
   const delay = endOfDay.getTime() - currentTime.getTime(); // Calculate milliseconds until EOD
-
-  console.log("Current Time:", format(currentTime, "HH:mm:ss"));
-  console.log("Milliseconds until EOD:", delay);
 
   setTimeout(async () => {
     await refreshApiDatas();
@@ -23,20 +21,35 @@ export const TimeScheduler = async () => {
 };
 
 const refreshApiDatas = async () => {
-  ApiCache.topRated = await fetchTMDBapi(
-    configDatas.TmdbApi.apiEndPoint.topRated
-  );
+  const args = {
+    topRated: {
+      url: configDatas.TmdbApi.apiEndPoint.topRated,
+      page: getRandomNumber(5),
+    },
+    nowPlaying: {
+      url: configDatas.TmdbApi.apiEndPoint.nowPlaying,
+      page: getRandomNumber(5),
+    },
+    popular: {
+      url: configDatas.TmdbApi.apiEndPoint.popular,
+      page: getRandomNumber(5),
+    },
+  };
+  ApiCache.topRated = await fetchTMDBapi(args.topRated);
 
   setTimeout(async () => {
-    ApiCache.nowPlaying = await fetchTMDBapi(
-      configDatas.TmdbApi.apiEndPoint.nowPlaying
-    );
+    try {
+      ApiCache.nowPlaying = await fetchTMDBapi(args.nowPlaying);
+    } catch (error) {
+      ApiCache.nowPlaying = await fetchTMDBapi(args.nowPlaying);
+    }
 
     setTimeout(async () => {
-      ApiCache.popular = await fetchTMDBapi(
-        configDatas.TmdbApi.apiEndPoint.popular
-      );
-      console.log(ApiCache);
+      try {
+        ApiCache.popular = await fetchTMDBapi(args.popular);
+      } catch (error) {
+        ApiCache.popular = await fetchTMDBapi(args.popular);
+      }
     }, 2000);
   }, 1500);
 

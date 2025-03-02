@@ -1,48 +1,87 @@
 import mongoose from "mongoose";
 import { configDatas } from "../../config";
 import { userModel } from "./model";
+import { errorLogger } from "../../ERROR-LOGGER/errorLogger";
 
-const dbConnection = async () => {
-  try {
-    const connection = await mongoose.connect(configDatas.MongoUri.apiUrl);
-
-    if (!connection) {
-    }
-  } catch (error) {}
-};
-
-class DataBase {
+export default class DataBase {
   private mongo;
 
   constructor(mongoUri: string) {
     this.mongo = mongoUri;
   }
 
-  public async connectDB(): Promise<Boolean> {
+  public async connectDB(): Promise<Boolean | unknown> {
     try {
       await mongoose.connect(this.mongo);
       return true;
     } catch (error) {
-      console.log("error in db Connection::", error);
-      return false;
+      errorLogger('error in db Connection::"', error);
+      throw new Error("Cant be Able to Connect to DB !@! shutting DOWN");
     }
   }
 
-  public async isUserExist(id: string): Promise<Boolean> {
+  public async getUser(uniqueNumber: string) {
     try {
-      const user = await userModel.findOne({ userId: id });
-
-      return user ? true : false;
-    } catch (error) {
-      console.log("error in UserExist::", error);
-
-      return false;
-    }
-  }
-
-  public async createUser(id: string) {
-    try {
-      const createUser = await userModel.create({ userId: id });
+      return await userModel.findOne({ userId: uniqueNumber });
     } catch (error) {}
+  }
+
+  public async isUserExist(unqiueNumber: string): Promise<Boolean> {
+    try {
+      const user = await userModel.findOne({ userId: unqiueNumber });
+
+      user ? true : await this.createUser(unqiueNumber);
+
+      return true;
+    } catch (error) {
+      errorLogger("error in UserExist::", error);
+
+      return false;
+    }
+  }
+
+  private async createUser(unqiueNumber: string): Promise<Boolean> {
+    try {
+      await userModel.create({ userId: unqiueNumber });
+
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  public async handleSearchQuery(unqiueNumber: string, query: string) {
+    try {
+      console.log("handling search in db");
+      await userModel.findOneAndUpdate(
+        { userId: unqiueNumber },
+        {
+          $push: {
+            searchHistory: query,
+          },
+        },
+      );
+    } catch (error) {
+      errorLogger("error in mongo handleSearchQuery::", error);
+    }
+  }
+
+  public async handleMovieLookUp(unqiueNumber: string, movieId: string) {
+    try {
+      console.log("handling Movie");
+      await userModel.findOneAndUpdate(
+        { userId: unqiueNumber },
+        {
+          $push: {
+            watchHistoryMovie: {
+              movieId,
+              watchedAt: new Date(),
+            },
+          },
+        },
+      );
+    } catch (error) {
+      errorLogger("error in Movielookup", error);
+    }
   }
 }

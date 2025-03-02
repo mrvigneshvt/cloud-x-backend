@@ -3,19 +3,16 @@ import { otp } from "../../plugins/otp";
 import { configDatas } from "../../../config";
 import { text } from "body-parser";
 import { localOtpCache } from "../route";
+import { errorLogger } from "../../../ERROR-LOGGER/errorLogger";
 
 export const WhatsAuth = async (req: any, res: Response) => {
   try {
-    // console.log(req, "reqqqq");
-    // console.log(req.user, "req-userrr");
     if (req.body.phone.length < 5) {
       return res.status(400).json({
         message: "invalid length",
       });
     }
     const generateOtp: string = otp();
-
-    //console.log(req.body);
 
     const suffixAddress = req.body.phone + "@c.us";
     const authMessage = ` Hey Your Authentication Code for Cloud X is -> *${generateOtp}*`;
@@ -24,9 +21,6 @@ export const WhatsAuth = async (req: any, res: Response) => {
       user: suffixAddress,
     });
 
-    console.log(body, "boo");
-
-    console.log("firing", suffixAddress, "   ", authMessage);
     const sendAuthCode = await fetch(configDatas.WhatsAuth.apiUrl, {
       method: "POST",
       headers: {
@@ -35,9 +29,8 @@ export const WhatsAuth = async (req: any, res: Response) => {
       body,
     });
 
-    console.log(sendAuthCode);
-
     if (sendAuthCode.status !== 200) {
+      console.log("api Failure whatsAuth");
       return res.status(404).json({ message: "issue in sending otp" });
     }
 
@@ -53,6 +46,6 @@ export const WhatsAuth = async (req: any, res: Response) => {
 
     return res.status(200).json({ success: true });
   } catch (error) {
-    console.log("error in WhatsAuth  ", error);
+    errorLogger("error in WhatsAuth::", error);
   }
 };

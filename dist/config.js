@@ -1,9 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.configDatas = void 0;
+let development = true;
 exports.configDatas = {
+    development: true, //change to False for Production
     client: {
-        ip: "192.168.1.10",
+        ip: development ? "localhost" : "109.123.237.36/", //"192.168.1.10",
         port: "5173",
     },
     WhatsAuth: {
@@ -14,7 +16,8 @@ exports.configDatas = {
         },
     },
     MongoUri: {
-        apiUrl: "mongodb+srv://admin:admin@cluster0.vi4qs.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+        apiUrl: "mongodb+srv://admin:admin@cluster0.a6ygr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+        //"mongodb+srv://admin:admin@cluster0.vi4qs.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
     },
     Jwt: {
         secret: "secretKeyHere",

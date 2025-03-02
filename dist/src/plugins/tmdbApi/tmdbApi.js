@@ -10,18 +10,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TimeScheduler = void 0;
-const date_fns_1 = require("date-fns");
 const config_1 = require("../../../config");
 const fetchApi_1 = require("./fetchApi");
 const ApiCache_1 = require("../../DataCache/ApiCache");
+const otp_1 = require("../otp");
 const TimeScheduler = () => __awaiter(void 0, void 0, void 0, function* () {
     yield refreshApiDatas();
     const currentTime = new Date();
     const endOfDay = new Date(currentTime);
     endOfDay.setHours(23, 59, 59, 59); // Set to midnight of the next day
     const delay = endOfDay.getTime() - currentTime.getTime(); // Calculate milliseconds until EOD
-    console.log("Current Time:", (0, date_fns_1.format)(currentTime, "HH:mm:ss"));
-    console.log("Milliseconds until EOD:", delay);
     setTimeout(() => __awaiter(void 0, void 0, void 0, function* () {
         yield refreshApiDatas();
         setTimeout(() => {
@@ -31,12 +29,35 @@ const TimeScheduler = () => __awaiter(void 0, void 0, void 0, function* () {
 });
 exports.TimeScheduler = TimeScheduler;
 const refreshApiDatas = () => __awaiter(void 0, void 0, void 0, function* () {
-    ApiCache_1.ApiCache.topRated = yield (0, fetchApi_1.fetchTMDBapi)(config_1.configDatas.TmdbApi.apiEndPoint.topRated);
+    const args = {
+        topRated: {
+            url: config_1.configDatas.TmdbApi.apiEndPoint.topRated,
+            page: (0, otp_1.getRandomNumber)(5),
+        },
+        nowPlaying: {
+            url: config_1.configDatas.TmdbApi.apiEndPoint.nowPlaying,
+            page: (0, otp_1.getRandomNumber)(5),
+        },
+        popular: {
+            url: config_1.configDatas.TmdbApi.apiEndPoint.popular,
+            page: (0, otp_1.getRandomNumber)(5),
+        },
+    };
+    ApiCache_1.ApiCache.topRated = yield (0, fetchApi_1.fetchTMDBapi)(args.topRated);
     setTimeout(() => __awaiter(void 0, void 0, void 0, function* () {
-        ApiCache_1.ApiCache.nowPlaying = yield (0, fetchApi_1.fetchTMDBapi)(config_1.configDatas.TmdbApi.apiEndPoint.nowPlaying);
+        try {
+            ApiCache_1.ApiCache.nowPlaying = yield (0, fetchApi_1.fetchTMDBapi)(args.nowPlaying);
+        }
+        catch (error) {
+            ApiCache_1.ApiCache.nowPlaying = yield (0, fetchApi_1.fetchTMDBapi)(args.nowPlaying);
+        }
         setTimeout(() => __awaiter(void 0, void 0, void 0, function* () {
-            ApiCache_1.ApiCache.popular = yield (0, fetchApi_1.fetchTMDBapi)(config_1.configDatas.TmdbApi.apiEndPoint.popular);
-            console.log(ApiCache_1.ApiCache);
+            try {
+                ApiCache_1.ApiCache.popular = yield (0, fetchApi_1.fetchTMDBapi)(args.popular);
+            }
+            catch (error) {
+                ApiCache_1.ApiCache.popular = yield (0, fetchApi_1.fetchTMDBapi)(args.popular);
+            }
         }), 2000);
     }), 1500);
     // ApiCache.trending = await fetchTMDBapi(
