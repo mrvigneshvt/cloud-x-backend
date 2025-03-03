@@ -1,9 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.configDatas = void 0;
-let development = true;
+let development = true; //change to false for Production
 exports.configDatas = {
-    development: true, //change to False for Production
     client: {
         ip: development ? "localhost" : "109.123.237.36/", //"192.168.1.10",
         port: "5173",

@@ -19,6 +19,7 @@ const errorLogger_1 = require("../../ERROR-LOGGER/errorLogger");
 const server_1 = require("../server");
 const authenticateJwt = (args) => (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
+    console.log("authenticating TOken");
     const token = (_a = req.cookies) === null || _a === void 0 ? void 0 : _a.authToken; // Read OUR AUTH token from cookies
     if (!token) {
         res
@@ -31,13 +32,13 @@ const authenticateJwt = (args) => (req, res, next) => __awaiter(void 0, void 0, 
         if (decoded && typeof decoded === "object" && decoded.id) {
             req.user = decoded; // Attach to `req.user`
             console.log(yield server_1.DB.getUser(decoded.id));
-            if (args.addUser) {
+            if (args && args.addUser) {
                 yield server_1.DB.isUserExist(decoded.id);
             }
-            else if (args.handleSearch) {
+            else if (args && args.handleSearch) {
                 yield server_1.DB.handleSearchQuery(decoded.id, req.params.query);
             }
-            else if (args.handleMovieLookup) {
+            else if (args && args.handleMovieLookup) {
                 yield server_1.DB.handleMovieLookUp(decoded.id, req.params.id);
             }
         }

@@ -7,6 +7,7 @@ const router = express.Router();
 
 export const logout = (req: Request, res: Response): Response => {
   try {
+    console.log("clearing cookies");
     res.clearCookie("authToken", {
       path: "/", // Ensure it matches the original cookie path
       httpOnly: true, // If the cookie was set as httpOnly

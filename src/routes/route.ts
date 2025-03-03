@@ -29,7 +29,7 @@ router.get("/ai", authenticateJwt, async (req: any, res: Response) => {
 
 router.get(
   "/watchOnline/uniqueHash/:hash",
-  authenticateJwt,
+  authenticateJwt({}),
   async (req: Request, res: Response) => {
     try {
       const { hash } = req.params;
@@ -123,30 +123,41 @@ router.get(
       if (isCached) {
         return res.status(200).json(isCached);
       }
-      const respose = await fetch(endPoint, {
-        method: "GET",
-        headers: {
-          accept: "application/json",
-          Authorization: configDatas.TmdbApi.key,
-        },
-      });
 
-      if (respose.ok) {
-        const Response = await respose.json();
+      async function checkNfetch() {
+        try {
+          const respose = await fetch(endPoint, {
+            method: "GET",
+            headers: {
+              accept: "application/json",
+              Authorization: configDatas.TmdbApi.key,
+            },
+          });
 
-        // Ensure backdrop_path and poster_path are not null
-        Response.backdrop_path = Response.backdrop_path
-          ? configDatas.TmdbApi.imageEndPoint + Response.backdrop_path
-          : configDatas.imageNotFound.url;
+          if (respose.ok) {
+            const Response = await respose.json();
 
-        Response.poster_path = Response.poster_path
-          ? configDatas.TmdbApi.imageEndPoint + Response.poster_path
-          : configDatas.imageNotFound.url;
-        await setMovieCache(Number(id), Response);
-        return res.status(200).json(Response);
-      } else {
-        return res.status(500).json({ success: false, message: "apiFailure" });
+            // Ensure backdrop_path and poster_path are not null
+            Response.backdrop_path = Response.backdrop_path
+              ? configDatas.TmdbApi.imageEndPoint + Response.backdrop_path
+              : configDatas.imageNotFound.url;
+
+            Response.poster_path = Response.poster_path
+              ? configDatas.TmdbApi.imageEndPoint + Response.poster_path
+              : configDatas.imageNotFound.url;
+            await setMovieCache(Number(id), Response);
+            return res.status(200).json(Response);
+          } else {
+            return res
+              .status(500)
+              .json({ success: false, message: "apiFailure" });
+          }
+        } catch (error) {
+          await checkNfetch();
+        }
       }
+
+      await checkNfetch();
     } catch (error) {
       errorLogger("error in single GetMovieInfo::", error);
     }
@@ -155,9 +166,10 @@ router.get(
 
 router.get(
   "/fileAvailable/:fileName",
-  authenticateJwt,
+  authenticateJwt({}),
   async (req: Request, res: Response) => {
     try {
+      console.log("looking for files?");
       const { fileName } = req.params;
 
       const endPoint = configDatas.openXapi.isExistEndPoint + `${fileName}/1`;
@@ -171,8 +183,11 @@ router.get(
 
       if (request.ok) {
         const respose = await request.json();
+        console.log("req.ok");
         return res.status(200).json(respose);
       } else {
+        console.log("req.NOok");
+
         return res.status(request.status).json({ message: "error not found" });
       }
     } catch (error: unknown) {
@@ -212,6 +227,6 @@ router.post("/auth/otpverify", async (req: Request, res: Response) => {
 });
 
 router.post("/auth/whatsapp", WhatsAuth);
-router.get("/logout", authenticateJwt, logout);
+router.get("/logout", authenticateJwt({}), logout);
 
 export { router, localOtpCache };

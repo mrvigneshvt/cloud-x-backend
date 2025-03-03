@@ -19,6 +19,7 @@ const errorLogger_1 = require("../../../ERROR-LOGGER/errorLogger");
 const router = express_1.default.Router();
 const logout = (req, res) => {
     try {
+        console.log("clearing cookies");
         res.clearCookie("authToken", {
             path: "/", // Ensure it matches the original cookie path
             httpOnly: true, // If the cookie was set as httpOnly

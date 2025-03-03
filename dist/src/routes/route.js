@@ -32,7 +32,7 @@ router.get("/ai", authJwt_1.authenticateJwt, (req, res) => __awaiter(void 0, voi
         message: "AI Server is running!",
     });
 }));
-router.get("/watchOnline/uniqueHash/:hash", authJwt_1.authenticateJwt, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get("/watchOnline/uniqueHash/:hash", (0, authJwt_1.authenticateJwt)({}), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { hash } = req.params;
         const isCached = yield (0, streamCache_1.getCacheStream)(hash);
@@ -110,35 +110,48 @@ router.get("/getMovieinfo/:id", (0, authJwt_1.authenticateJwt)({ handleMovieLook
         if (isCached) {
             return res.status(200).json(isCached);
         }
-        const respose = yield fetch(endPoint, {
-            method: "GET",
-            headers: {
-                accept: "application/json",
-                Authorization: config_1.configDatas.TmdbApi.key,
-            },
-        });
-        if (respose.ok) {
-            const Response = yield respose.json();
-            // Ensure backdrop_path and poster_path are not null
-            Response.backdrop_path = Response.backdrop_path
-                ? config_1.configDatas.TmdbApi.imageEndPoint + Response.backdrop_path
-                : config_1.configDatas.imageNotFound.url;
-            Response.poster_path = Response.poster_path
-                ? config_1.configDatas.TmdbApi.imageEndPoint + Response.poster_path
-                : config_1.configDatas.imageNotFound.url;
-            yield (0, streamCache_1.setMovieCache)(Number(id), Response);
-            return res.status(200).json(Response);
+        function checkNfetch() {
+            return __awaiter(this, void 0, void 0, function* () {
+                try {
+                    const respose = yield fetch(endPoint, {
+                        method: "GET",
+                        headers: {
+                            accept: "application/json",
+                            Authorization: config_1.configDatas.TmdbApi.key,
+                        },
+                    });
+                    if (respose.ok) {
+                        const Response = yield respose.json();
+                        // Ensure backdrop_path and poster_path are not null
+                        Response.backdrop_path = Response.backdrop_path
+                            ? config_1.configDatas.TmdbApi.imageEndPoint + Response.backdrop_path
+                            : config_1.configDatas.imageNotFound.url;
+                        Response.poster_path = Response.poster_path
+                            ? config_1.configDatas.TmdbApi.imageEndPoint + Response.poster_path
+                            : config_1.configDatas.imageNotFound.url;
+                        yield (0, streamCache_1.setMovieCache)(Number(id), Response);
+                        return res.status(200).json(Response);
+                    }
+                    else {
+                        return res
+                            .status(500)
+                            .json({ success: false, message: "apiFailure" });
+                    }
+                }
+                catch (error) {
+                    yield checkNfetch();
+                }
+            });
         }
-        else {
-            return res.status(500).json({ success: false, message: "apiFailure" });
-        }
+        yield checkNfetch();
     }
     catch (error) {
         (0, errorLogger_1.errorLogger)("error in single GetMovieInfo::", error);
     }
 }));
-router.get("/fileAvailable/:fileName", authJwt_1.authenticateJwt, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get("/fileAvailable/:fileName", (0, authJwt_1.authenticateJwt)({}), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        console.log("looking for files?");
         const { fileName } = req.params;
         const endPoint = config_1.configDatas.openXapi.isExistEndPoint + `${fileName}/1`;
         const request = yield fetch(endPoint, {
@@ -149,9 +162,11 @@ router.get("/fileAvailable/:fileName", authJwt_1.authenticateJwt, (req, res) => 
         });
         if (request.ok) {
             const respose = yield request.json();
+            console.log("req.ok");
             return res.status(200).json(respose);
         }
         else {
+            console.log("req.NOok");
             return res.status(request.status).json({ message: "error not found" });
         }
     }
@@ -186,4 +201,4 @@ router.post("/auth/otpverify", (req, res) => __awaiter(void 0, void 0, void 0, f
     });
 }));
 router.post("/auth/whatsapp", OtpAuth_1.WhatsAuth);
-router.get("/logout", authJwt_1.authenticateJwt, Base_1.logout);
+router.get("/logout", (0, authJwt_1.authenticateJwt)({}), Base_1.logout);

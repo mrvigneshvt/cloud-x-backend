@@ -11,8 +11,9 @@ interface middlewareType {
 }
 
 export const authenticateJwt =
-  (args: middlewareType) =>
+  (args?: middlewareType) =>
   async (req: Request, res: Response, next: NextFunction) => {
+    console.log("authenticating TOken");
     const token = req.cookies?.authToken; // Read OUR AUTH token from cookies
 
     if (!token) {
@@ -34,11 +35,11 @@ export const authenticateJwt =
         (req as any).user = decoded; // Attach to `req.user`
 
         console.log(await DB.getUser(decoded.id));
-        if (args.addUser) {
+        if (args && args.addUser) {
           await DB.isUserExist(decoded.id);
-        } else if (args.handleSearch) {
+        } else if (args && args.handleSearch) {
           await DB.handleSearchQuery(decoded.id, req.params.query);
-        } else if (args.handleMovieLookup) {
+        } else if (args && args.handleMovieLookup) {
           await DB.handleMovieLookUp(decoded.id, req.params.id);
         }
       }
